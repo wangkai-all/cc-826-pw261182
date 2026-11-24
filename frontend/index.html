@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>罕见事件分析 · 首次溢出概率估计</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="viz-root">
+<header class="topbar">
+  <div>
+    <h1>罕见事件分析应用</h1>
+    <p class="subtitle">虚构排队系统 · 给定时段首次缓存溢出概率 · 普通模拟 vs 重要抽样</p>
+  </div>
+  <div class="badge" id="conn-badge">连接中…</div>
+</header>
+
+<main>
+  <!-- ============ 配置区 ============ -->
+  <section class="card" aria-labelledby="cfg-title">
+    <h2 id="cfg-title">1. 场景与容量配置</h2>
+    <div class="form-grid">
+      <label>预设场景
+        <select id="preset-select"></select>
+      </label>
+      <label>容量 C
+        <input type="number" id="in-capacity" min="1" max="200" step="1">
+      </label>
+      <label>时域 T（时隙）
+        <input type="number" id="in-horizon" min="1" max="200" step="1">
+      </label>
+      <label>正式路径数 / 方法
+        <input type="number" id="in-n" min="100" step="500">
+      </label>
+      <label>试运行路径数 / 候选
+        <input type="number" id="in-pilot" min="200" step="500">
+      </label>
+      <label>分片大小（断点粒度）
+        <input type="number" id="in-shard" min="100" step="100">
+      </label>
+      <label>手动偏置倍率 r（留空=自适应试运行）
+        <input type="number" id="in-tilt" min="1" step="0.1" placeholder="自适应">
+      </label>
+      <label>随机种子
+        <input type="number" id="in-seed" step="1">
+      </label>
+    </div>
+    <p class="hint" id="scenario-desc"></p>
+    <details class="model-details">
+      <summary>模型参数（到达流 / 服务过程）</summary>
+      <pre id="model-json" class="json-box"></pre>
+    </details>
+    <div class="actions">
+      <button id="btn-run" class="primary">启动对照估计</button>
+      <button id="btn-exact" class="ghost">精确转移核对（小状态）</button>
+      <button id="btn-cancel" class="danger" disabled>取消任务</button>
+    </div>
+    <p class="disclaimer" id="cfg-disclaimer"></p>
+  </section>
+
+  <!-- ============ 运行状态 ============ -->
+  <section class="card hidden" id="status-card" aria-live="polite">
+    <h2>2. 任务状态</h2>
+    <div class="status-row">
+      <span class="status-pill" id="task-status">—</span>
+      <span id="task-progress" class="progress-text"></span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div id="pilot-box" class="pilot-box hidden">
+      <h3>自适应试运行（独立随机流，结果不进入正式估计）</h3>
+      <div id="pilot-table"></div>
+      <p id="pilot-choice" class="hint"></p>
+    </div>
+  </section>
+
+  <!-- ============ 结果对照 ============ -->
+  <section class="card hidden" id="result-card">
+    <h2>3. 两种模拟的误差与费用对照</h2>
+    <div id="reliability-banner"></div>
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <h3 class="chart-title">收敛曲线：估计值随路径数变化（对数纵轴）</h3>
+    <div id="chart-convergence" class="chart-box"></div>
+    <div id="convergence-table"></div>
+
+    <h3 class="chart-title">费用与误差对照</h3>
+    <div id="compare-table"></div>
+    <div id="exact-box" class="exact-box"></div>
+    <div id="rule-of-three" class="hint"></div>
+  </section>
+
+  <!-- ============ 触发路径与权重来源 ============ -->
+  <section class="card hidden" id="trace-card">
+    <h2>4. 一条触发溢出的路径与权重来源</h2>
+    <p class="hint">似然比按<strong>每个时隙的实际到达抽样</strong>逐段累计，
+      与队列状态无关；服务/相位切换律不倾斜，贡献为 1。</p>
+    <div class="trace-meta" id="trace-meta"></div>
+    <h3 class="chart-title">逐时隙对数似然比贡献（红=触发溢出的抽样）</h3>
+    <div id="chart-lr" class="chart-box"></div>
+    <h3 class="chart-title">队列长度轨迹</h3>
+    <div id="chart-queue" class="chart-box"></div>
+    <details open>
+      <summary>路径明细表</summary>
+      <div class="table-scroll">
+        <div id="trace-table"></div>
+      </div>
+    </details>
+    <h3 class="chart-title">命中路径对数权重分布（前 500 条样本）</h3>
+    <div id="chart-hist" class="chart-box"></div>
+  </section>
+
+  <!-- ============ 历史任务 ============ -->
+  <section class="card">
+    <h2>5. 持久化任务（分片恢复 / 取消语义）</h2>
+    <div id="task-table"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  全部随机数、分布与持久化均从零实现（Python 标准库 + 原生前端）。
+  本应用基于<strong>虚构模型</strong>，仅用于方法教学与对照，
+  不代表任何真实系统，<strong>不构成容量或可靠性保证</strong>。
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
